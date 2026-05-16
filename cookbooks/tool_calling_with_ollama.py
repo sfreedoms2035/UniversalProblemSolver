@@ -92,156 +92,10 @@ from tool_mode import get_tool_schema, execute_tool
 
 
 # =============================================================================
-# Model auto-detection
+# Model configuration
 # =============================================================================
 
-# Models known to support tool/function calling in Ollama
-# Format: (family_prefix, min_size_gb_estimate) for memory guidance
-TOOL_CAPABLE_MODELS = {
-    # family       min_gb  notes
-    "gemma4":       5.0,   # Gemma 4 — first Gemma with tool calling
-    "llama4":       5.0,   # Llama 4 (Scout/Maverick)
-    "llama3.3":     4.0,   # Llama 3.3 70B (needs lots of RAM, quantized variants exist)
-    "llama3.2":     2.5,   # Llama 3.2 (1B/3B — small! but tool support is limited)
-    "llama3.1":     4.0,   # Llama 3.1 8B
-    "qwen3":        2.5,   # Qwen 3 (1.7B/4B/8B/14B/32B — 1.7B works with ~2 GiB)
-    "mistral":      4.0,   # Mistral v0.3+
-    "mixtral":      4.0,   # Mixtral 8x7B
-    "phi4":         3.0,   # Phi-4 (14B — 3 GiB quantized)
-    "command-r":    4.0,   # Cohere Command R+
-    "deepseek":     4.0,   # DeepSeek V2+
-    "nemotron":     4.0,   # NVIDIA Nemotron
-    "hermes3":      4.0,   # Hermes 3
-    "dolphin":      4.0,   # Dolphin 3
-}
-
-
-def _model_family(name: str) -> str:
-    """Extract base family from a model tag like 'gemma4:e4b' → 'gemma4'."""
-    return name.split(":")[0].split("-")[0].split(".")[0].rstrip("0123456789")
-
-
-def _is_tool_capable(name: str) -> bool:
-    """Check if model is known to support tool calling.
-
-    Uses prefix matching so 'gemma4:e4b' matches 'gemma4', but 'gemma3:1b' does NOT.
-    """
-    name_lower = name.lower()
-    for family in TOOL_CAPABLE_MODELS:
-        # Match full family prefix (gemma4 matches, gemma3 does not)
-        if name_lower.startswith(family.lower()):
-            # Make sure it's not a sub-match: gemma4 matches gemma4 but not gemma3
-            rest = name_lower[len(family):]
-            if not rest or rest.startswith(":") or rest.startswith("-"):
-                return True
-    return False
-
-
-def _get_available_models() -> list[dict]:
-    """Return list of locally pulled Ollama models with tool-calling support."""
-    try:
-        models = ollama.list().get("models", [])
-    except Exception:
-        return []
-
-    candidates = []
-    for m in models:
-        name = m.get("model", "")
-        if _is_tool_capable(name):
-            size_gb = m.get("size", 0) / (1024**3)
-            candidates.append({"name": name, "size_gb": round(size_gb, 1)})
-
-    # Sort by size ascending (prefer smaller models when memory is tight)
-    candidates.sort(key=lambda c: c["size_gb"])
-    return candidates
-
-
-def _estimate_available_memory_gb() -> float:
-    """Return estimated available system memory in GiB."""
-    try:
-        if sys.platform == "win32":
-            import ctypes
-
-            kernel32 = ctypes.windll.kernel32
-            mem = ctypes.c_ulonglong(0)
-            kernel32.GlobalMemoryStatusEx(ctypes.byref(mem))
-            # MEMORYSTATUSEX has ullAvailPhys at offset 24 (8 bytes)
-            # Simpler approach: use psutil if available
-            try:
-                import psutil
-
-                return round(psutil.virtual_memory().available / (1024**3), 1)
-            except ImportError:
-                pass
-        elif sys.platform in ("linux", "darwin"):
-            try:
-                import psutil
-
-                return round(psutil.virtual_memory().available / (1024**3), 1)
-            except ImportError:
-                pass
-    except Exception:
-        pass
-    return 0.0
-
-
-def _print_available_models(candidates: list[dict], available_gb: float):
-    """Print available tool-capable models and their sizes."""
-    if not candidates:
-        print("  No tool-capable models found locally.")
-        print("  Pull one with: ollama pull gemma4  (or qwen3, llama3.1, etc.)")
-        return
-
-    print(f"  Available models (system memory: ~{available_gb:.1f} GiB free):")
-    for c in candidates:
-        fits = "✓" if c["size_gb"] <= available_gb else "✗ insufficient memory"
-        print(f"    {c['name']:<30s} {c['size_gb']:>5.1f} GiB  {fits}")
-
-
-def pick_model(override: str | None = None) -> str:
-    """
-    Pick the best available Ollama model for tool calling.
-
-    1. If ``--model`` was passed on the CLI, use that (no checks)
-    2. Otherwise scan local models, pick the smallest tool-capable one that
-       fits in available memory
-    3. Fall back to ``gemma4:e4b`` (user may need to pull it)
-    """
-    if override:
-        return override
-
-    candidates = _get_available_models()
-    available_gb = _estimate_available_memory_gb()
-
-    print("=" * 60)
-    print("Model Detection")
-    print("=" * 60)
-
-    _print_available_models(candidates, available_gb)
-
-    # Pick smallest model that fits in available memory
-    for c in candidates:
-        if available_gb == 0.0 or c["size_gb"] <= available_gb:
-            chosen = c["name"]
-            print(f"\n  → Selected: {chosen} ({c['size_gb']} GiB)")
-            print()
-            return chosen
-
-    # No model fits
-    if candidates:
-        smallest = candidates[0]
-        print(
-            f"\n  ⚠  '{smallest['name']}' needs ~{smallest['size_gb']} GiB but only "
-            f"{available_gb:.1f} GiB is free."
-        )
-        print("     Try closing other applications or use a smaller model.")
-
-    print(f"\n  ⚠  No tool-capable model fits in available memory ({available_gb:.1f} GiB).")
-    print(f"     Pull a lightweight tool-capable model like:")
-    print(f"       ollama pull qwen3:1.7b    (~1.4 GiB, good tool support)")
-    print(f"       ollama pull llama3.2:3b   (~2.0 GiB)")
-    print()
-    return None
+MODEL = "gemma4:e4b"
 
 
 # =============================================================================
@@ -250,19 +104,8 @@ def pick_model(override: str | None = None) -> str:
 
 
 async def main():
-    # --- Parse optional CLI override for model ---
-    model_override = None
-    for i, arg in enumerate(sys.argv[1:], 1):
-        if arg == "--model" and i + 1 < len(sys.argv):
-            model_override = sys.argv[i + 1]
-
-    MODEL = pick_model(model_override)
-    if MODEL is None:
-        print("No suitable model available. Exiting.")
-        print("Tip: ollama pull qwen3:1.7b  (small, tool-capable)")
-        sys.exit(1)
-
     # ------------------------------------------------------------------
+    # Step 1: Inspect the tool schema
     # Step 1: Inspect the tool schema
     # ------------------------------------------------------------------
     tool_schema = get_tool_schema()
@@ -317,10 +160,9 @@ async def main():
         print(f"  ✗ Ollama error: {e}")
         print()
         print("  Tips:")
-        print(f"    - The model '{MODEL}' may not be pulled yet. Run: ollama pull {MODEL}")
+        print(f"    - Run: ollama pull {MODEL}")
         if "memory" in str(e).lower():
-            print("    - Not enough system memory. Try a smaller model like qwen3:1.7b")
-            print("      or pass --model <name> to override.")
+            print("    - Not enough system memory. Close other apps or restart Ollama.")
         print()
         return
     print(f"  Model:  {response['model']}")
@@ -366,6 +208,9 @@ async def main():
             arguments = json.loads(arguments)
         preview = arguments.get("prompt", "")[:60]
         print(f"  Executing gemini_web_chat(prompt='{preview}...')")
+
+        # Show browser so you can watch the automation
+        arguments["headless"] = False
 
         # This opens Playwright, navigates to Gemini, sends the prompt
         result = await execute_tool(arguments)
