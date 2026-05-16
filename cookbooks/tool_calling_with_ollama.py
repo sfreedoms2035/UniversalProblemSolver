@@ -78,6 +78,7 @@ if not hasattr(sys.stdout, "buffer"):
 import json
 import os
 import subprocess as _subprocess
+import argparse
 
 # Ensure project root is on sys.path so tool_mode is importable
 _SELF_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -89,6 +90,57 @@ import asyncio
 import ollama
 from ollama._types import ResponseError
 from tool_mode import get_tool_schema, execute_tool
+
+
+# =============================================================================
+# Tool-specific prompts
+# =============================================================================
+
+TOOL_PROMPTS = {
+    "general": (
+        "Research the latest advancements in quantum error correction "
+        "and summarize them in 3 bullet points."
+    ),
+    "deep_research": (
+        "Research the latest advancements in quantum error correction "
+        "and produce a comprehensive multi-source research report with citations."
+    ),
+    "image": (
+        "Generate a photorealistic image of a futuristic quantum computer "
+        "with glowing circuits in a blue neon style."
+    ),
+    "video": (
+        "Generate a short cinematic video of a sunset over a futuristic city skyline."
+    ),
+    "canvas": (
+        "Open a collaborative workspace and draft a project plan for "
+        "building a quantum error correction simulator."
+    ),
+    "music": (
+        "Compose a 30-second ambient electronic track with a calm, "
+        "space-inspired atmosphere."
+    ),
+    "learning": (
+        "Help me understand the concept of quantum superposition "
+        "with an interactive step-by-step explanation."
+    ),
+    "deep_think": (
+        "Analyze the philosophical implications of quantum decoherence "
+        "on the measurement problem in quantum mechanics."
+    ),
+}
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Test gemini_web_chat with Gemma 4 via Ollama"
+    )
+    parser.add_argument(
+        "--tool", type=str, default="general",
+        choices=list(TOOL_PROMPTS.keys()),
+        help="Gemini sub-tool to test (default: general)"
+    )
+    return parser.parse_args()
 
 
 # =============================================================================
@@ -104,6 +156,10 @@ MODEL = "gemma4:e4b"
 
 
 async def main():
+    args = parse_args()
+    tool_name = args.tool
+    prompt_text = TOOL_PROMPTS[tool_name]
+
     # ------------------------------------------------------------------
     # Step 1: Inspect the tool schema
     # Step 1: Inspect the tool schema
@@ -140,15 +196,14 @@ async def main():
         {
             "role": "user",
             "content": (
-                "Research the latest advancements in quantum error correction "
-                "and summarize them in 3 bullet points. "
-                "Use the gemini_web_chat tool if you need real-time info from Gemini."
+                f"{prompt_text}\n\n"
+                f"IMPORTANT: Use the gemini_web_chat tool with tool='{tool_name}' to accomplish this."
             ),
         }
     ]
 
     print("=" * 60)
-    print("STEP 3 — Asking Ollama model (with tools available)")
+    print(f"STEP 3 — Asking Ollama model (tool='{tool_name}')")
     print("=" * 60)
     try:
         response = ollama.chat(
@@ -192,7 +247,7 @@ async def main():
     # Step 5: Execute the tool & return results to the LLM
     # ------------------------------------------------------------------
     print("=" * 60)
-    print("STEP 5 — Executing tool & feeding result back to LLM")
+    print(f"STEP 5 — Executing tool & feeding result back to LLM (tool='{tool_name}')")
     print("=" * 60)
 
     # Append the model's tool-call response
@@ -207,10 +262,12 @@ async def main():
         if isinstance(arguments, str):
             arguments = json.loads(arguments)
         preview = arguments.get("prompt", "")[:60]
-        print(f"  Executing gemini_web_chat(prompt='{preview}...')")
+        print(f"  Executing gemini_web_chat(prompt='{preview}...', tool='{tool_name}')")
 
         # Show browser so you can watch the automation
         arguments["headless"] = False
+        # Force the requested sub-tool regardless of what the LLM chose
+        arguments["tool"] = tool_name
 
         # This opens Playwright, navigates to Gemini, sends the prompt
         result = await execute_tool(arguments)
@@ -244,7 +301,7 @@ async def main():
     # Step 6: View the final answer
     # ------------------------------------------------------------------
     print("=" * 60)
-    print("STEP 6 — Final answer from Gemma 4")
+    print(f"FINAL ANSWER FROM GEMMA 4 (tool='{tool_name}')")
     print("=" * 60)
     print(final_answer)
     print()
