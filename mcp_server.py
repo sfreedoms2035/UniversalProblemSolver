@@ -43,36 +43,36 @@ class GeminiMCPServer:
         return [
             {
                 "name": "gemini_web_chat",
-                "description": "Send a prompt to Gemini web chat and get the response. Automates browser interaction with Gemini.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "prompt": {
-                                "type": "string",
-                                "description": "The prompt to send to Gemini"
-                            },
-                            "prompt_file": {
-                                "type": "string",
-                                "description": "Path to a text file containing the prompt"
-                            },
-                            "model": {
-                                "type": "string",
-                                "enum": ["fast", "thinking", "pro"],
-                                "description": "Gemini model mode: fast (quick), thinking (complex reasoning), or pro (advanced tasks, default)"
-                            },
-                            "tool": {
-                                "type": "string",
-                                "enum": ["general", "image", "video", "canvas", "deep_research", "music", "learning", "deep_think"],
-                                "description": "Gemini tool: general (default), image, video, canvas, deep_research, music, learning, or deep_think (Ultra)"
-                            },
-                            "tools": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "Reserved for future tool toggles (currently none in Gemini 3.1 UI)"
-                            },
+                "description": "Brower-automated interface to Google Gemini (gemini.google.com). Use this tool to answer complex questions, research topics, generate text, analyze data, create images, or perform deep research via Gemini's web UI. Best for tasks needing Gemini-specific capabilities (vision, deep research, thinking mode) or when API access is unavailable. DO NOT use for simple/known facts — prefer direct API or local knowledge. Returns structured JSON with thinking/reasoning content and final answer. Supports multiple model modes and specialized tools.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": {
+                            "type": "string",
+                            "description": "The prompt to send to Gemini. Be specific and detailed for best results."
+                        },
+                        "prompt_file": {
+                            "type": "string",
+                            "description": "Path to a text file containing the prompt (alternative to prompt). Use when the prompt is very long."
+                        },
+                        "model": {
+                            "type": "string",
+                            "enum": ["fast", "thinking", "pro"],
+                            "description": "Gemini model mode to use. Choose based on task complexity: 'fast' for quick/trivial responses with Gemini Flash (lowest latency), 'thinking' for complex reasoning, logic, math, and multi-step problems (shows step-by-step thinking), 'pro' (default) for general-purpose tasks including advanced math, programming, and analysis with Gemini Pro."
+                        },
+                        "tool": {
+                            "type": "string",
+                            "enum": ["general", "image", "video", "canvas", "deep_research", "music", "learning", "deep_think"],
+                            "description": "Gemini tool to activate for the conversation. 'general' (default) for standard chat. 'image' for AI image generation (Bild erstellen). 'video' for AI video generation (Veo). 'canvas' for collaborative document/workspace editing. 'deep_research' for multi-step web research with comprehensive reports. 'music' for music generation. 'learning' for interactive learning mode. 'deep_think' for Ultra-level deep reasoning (most powerful). Note: some tools (deep_research, music, learning) require a Gemini subscription."
+                        },
+                        "tools": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Reserved for future tool toggles (currently none supported in Gemini 3.1 UI)"
+                        },
                         "output_filename": {
                             "type": "string",
-                            "description": "Custom output filename (without extension)"
+                            "description": "Custom output filename (without extension). Auto-generated timestamp if omitted."
                         },
                         "output_dir": {
                             "type": "string",
@@ -80,15 +80,15 @@ class GeminiMCPServer:
                         },
                         "headless": {
                             "type": "boolean",
-                            "description": "Run browser in headless mode (default: true)"
+                            "description": "Run browser in headless mode (no visible window, default: true for MCP). Set false for debugging."
                         },
                         "pause_for_login": {
                             "type": "boolean",
-                            "description": "Pause for manual login (default: false)"
+                            "description": "Pause and wait for manual browser login before sending prompt (default: false)."
                         },
                         "timeout": {
                             "type": "integer",
-                            "description": "Timeout in seconds (default: 120)"
+                            "description": "Maximum seconds to wait for Gemini response (default: 300 for MCP). Deep Research automatically increases to min 300."
                         }
                     },
                     "required": []
@@ -115,6 +115,7 @@ class GeminiMCPServer:
             output_dir = arguments.get('output_dir', './output')
             headless = arguments.get('headless', True)
             pause_for_login = arguments.get('pause_for_login', False)
+            timeout = arguments.get('timeout', 300)
             
             # Normalize tools
             if isinstance(tools, str):
@@ -149,7 +150,7 @@ class GeminiMCPServer:
                 output_filename=output_filename,
                 pause_for_login=pause_for_login,
                 confirm_before_send=False,
-                timeout=args.get('timeout', 300)
+                timeout=timeout
             )
             
             return result
