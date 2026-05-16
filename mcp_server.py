@@ -268,9 +268,6 @@ def run_mcp_mode():
     asyncio.run(run_mcp_server())
 
 
-# Example usage for testing
+# Standalone entry point
 if __name__ == "__main__":
-    print("MCP Server Mode")
-    print("This module should be run as an MCP server.")
-    print("Use: python mcp_server.py")
-    print("\nFor testing, you can use an MCP client to connect.")
+    run_mcp_mode()
