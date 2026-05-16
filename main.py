@@ -21,6 +21,7 @@ Usage:
 import asyncio
 import json
 import sys
+import os
 import argparse
 from pathlib import Path
 
@@ -28,7 +29,79 @@ from pathlib import Path
 # Copyright (c) 2025 4QDR.AI. All rights reserved.
 
 from gemini_pipeline import GeminiPipeline
+
+
+def parse_arguments():
+    """Parse command line arguments with mode selection"""
+    parser = argparse.ArgumentParser(
+        description='4QDR.AI Universal Problem Solver',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Modes:
+  direct  - Standard Python pipeline (default)
+  tool    - Callable tool for AI agents
+  mcp     - MCP server for AI agents
+
+Examples:
+  # Direct mode
+  python main.py --prompt "Explain quantum computing"
+  python main.py --prompt-file prompts.txt
+  
+  # Persistent mode (uses real Chrome, saves login session)
+  python main.py --prompt "What is AI?" --persistent
+  
+  # Tool mode
+  python main.py --mode tool --prompt "What is AI?"
+  python main.py --mode tool --prompt-file prompts.txt --headless
+  
+  # MCP server mode
+  python main.py --mode mcp
+        '''
+    )
     
+    # Mode selection
+    parser.add_argument('--mode', type=str, default='direct',
+                       choices=['direct', 'tool', 'mcp'],
+                       help='Execution mode: direct (default), tool, or mcp')
+    
+    # Prompt input options
+    prompt_group = parser.add_mutually_exclusive_group()
+    prompt_group.add_argument('--prompt', type=str, help='Prompt to send to Gemini')
+    prompt_group.add_argument('--prompt-file', type=str, help='Text file containing the prompt')
+    
+    # Output options
+    parser.add_argument('--output', type=str, help='Output filename (without extension)')
+    parser.add_argument('--output-dir', type=str, default='./output', help='Output directory (default: ./output)')
+    
+    # Browser options
+    parser.add_argument('--headless', action='store_true', help='Run browser in headless mode')
+    parser.add_argument('--login', action='store_true', help='Pause for manual login before sending prompt')
+    parser.add_argument('--confirm', action='store_true', help='Require manual confirmation before sending prompt (default: auto-send)')
+    parser.add_argument('--persistent', action='store_true',
+                       help='Save login session for next run')
+    
+    # Gemini configuration
+    parser.add_argument('--model', type=str, default='pro', choices=['fast', 'thinking', 'pro'],
+                       help='Gemini model mode: fast, thinking, or pro (default: pro)')
+    parser.add_argument('--tool', type=str, default='general',
+                       choices=['general', 'image', 'video', 'canvas', 'deep_research',
+                                'music', 'learning', 'deep_think'],
+                       help='Gemini tool to use: general (default), image, video, canvas, deep_research, music, learning, deep_think')
+    parser.add_argument('--tools', type=str, default='',
+                       help='Reserved for future tool toggles (currently none supported in Gemini 3.1 UI)')
+    
+    # Timeout
+    parser.add_argument('--timeout', type=int, default=120, help='Timeout in seconds (default: 120)')
+    
+    # Tool/MCP specific options
+    parser.add_argument('--json', action='store_true', help='Output results as JSON (tool mode)')
+    parser.add_argument('--schema', action='store_true', help='Print tool schema and exit (tool mode)')
+    
+    return parser.parse_args()
+
+
+async def run_direct_mode(args):
+    """Run in direct mode - standard pipeline execution"""
     # Validate prompt
     if not args.prompt and not args.prompt_file:
         print("Error: Either --prompt or --prompt-file must be provided in direct mode")
