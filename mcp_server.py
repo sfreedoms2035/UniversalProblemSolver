@@ -134,7 +134,10 @@ class GeminiMCPServer:
                     'error': f'Prompt file not found: {prompt_file}'
                 }
             
-            # Run pipeline
+            # Run pipeline — redirect stdout to stderr to keep JSON-RPC stream clean
+            old_stdout = sys.stdout
+            sys.stdout = sys.stderr
+            
             pipeline = GeminiPipeline(
                 headless=headless,
                 output_dir=output_dir,
@@ -144,14 +147,17 @@ class GeminiMCPServer:
                 tools=tools
             )
             
-            result = await pipeline.run(
-                prompt=prompt,
-                prompt_file=prompt_file,
-                output_filename=output_filename,
-                pause_for_login=pause_for_login,
-                confirm_before_send=False,
-                timeout=timeout
-            )
+            try:
+                result = await pipeline.run(
+                    prompt=prompt,
+                    prompt_file=prompt_file,
+                    output_filename=output_filename,
+                    pause_for_login=pause_for_login,
+                    confirm_before_send=False,
+                    timeout=timeout
+                )
+            finally:
+                sys.stdout = old_stdout
             
             return result
             
