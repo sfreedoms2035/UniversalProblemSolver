@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tool Mode - Exposes Gemini Pipeline as a callable tool for AI agents and LLMs
+4QDR.AI Universal Problem Solver - Tool Mode
 
 This module provides a tool interface that AI agents can use to invoke the pipeline.
 It returns structured JSON responses suitable for programmatic consumption.
@@ -11,8 +11,8 @@ import json
 import sys
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+# 4QDR.AI Universal Problem Solver
+# Copyright (c) 2025 4QDR.AI. All rights reserved.
 
 from gemini_pipeline import GeminiPipeline
 

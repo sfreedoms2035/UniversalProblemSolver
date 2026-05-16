@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-MCP Server Mode - Exposes Gemini Pipeline as an MCP server for AI agents
+4QDR.AI Universal Problem Solver - MCP Server Mode
 
 This module implements a Model Context Protocol (MCP) server that exposes
 the Gemini pipeline as a tool that AI agents can discover and use.
 """
+
+# 4QDR.AI Universal Problem Solver
+# Copyright (c) 2025 4QDR.AI. All rights reserved.
 
 import asyncio
 import json

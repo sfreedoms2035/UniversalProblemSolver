@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Gemini Web Chat Automation Pipeline - Core
+4QDR.AI Universal Problem Solver - Gemini Web Chat Automation Pipeline
 """
+
+# 4QDR.AI Universal Problem Solver
+# Copyright (c) 2025 4QDR.AI. All rights reserved.
 
 import asyncio
 import json

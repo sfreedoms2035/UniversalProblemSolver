@@ -1,4 +1,6 @@
-# Gemini Web Chat Automation Pipeline
+# 4QDR.AI Universal Problem Solver
+
+> Copyright (c) 2025 4QDR.AI. All rights reserved.
 
 Automates interaction with Gemini web chat using Playwright. Accepts prompts (directly or from files), sends them to Gemini, captures the full response (including thinking/reasoning), and saves structured results as JSON.
 
