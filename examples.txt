@@ -1,0 +1,132 @@
+# Gemini Web Chat Automation Pipeline - Usage Examples
+
+## Basic Usage Examples
+
+### 1. Direct Prompt
+Send a prompt directly via command line:
+```batch
+run_pipeline.bat --prompt "Explain quantum computing in simple terms"
+```
+
+Or using Python directly:
+```batch
+python gemini_pipeline.py --prompt "What is machine learning?"
+```
+
+### 2. Prompt from File
+Create a text file with your prompt:
+```batch
+echo What are the benefits of using Python for data analysis? > my_prompt.txt
+```
+
+Then run:
+```batch
+run_pipeline.bat --prompt-file my_prompt.txt
+```
+
+Or:
+```batch
+python gemini_pipeline.py --prompt-file my_prompt.txt
+```
+
+## Advanced Usage Examples
+
+### 3. Custom Output Filename
+```batch
+run_pipeline.bat --prompt "Explain blockchain technology" --output blockchain_explanation
+```
+
+### 4. Custom Output Directory
+```batch
+run_pipeline.bat --prompt-file prompts.txt --output-dir ./my_responses
+```
+
+### 5. Visible Browser Mode
+See the browser automation in action:
+```batch
+run_pipeline.bat --prompt "Hello Gemini" --visible
+```
+
+### 6. Increased Timeout
+For longer responses:
+```batch
+run_pipeline.bat --prompt "Write a detailed essay about AI" --timeout 300
+```
+
+## Batch Processing Examples
+
+### 7. Multiple Prompts from File
+Create a file with multiple prompts (one per line):
+```
+What is artificial intelligence?
+Explain machine learning algorithms.
+What are neural networks?
+How does deep learning work?
+```
+
+Run:
+```batch
+run_pipeline.bat --prompt-file multiple_prompts.txt
+```
+
+### 8. Programmatic Usage
+Use the pipeline in your Python scripts:
+```python
+import asyncio
+from gemini_pipeline import GeminiPipeline
+
+async def main():
+    pipeline = GeminiPipeline(headless=True, output_dir="./results")
+    result = await pipeline.run(
+        prompt="What is quantum computing?",
+        output_filename="quantum_computing"
+    )
+    print(f"Result saved to: {result}")
+
+asyncio.run(main())
+```
+
+## Testing and Development
+
+### 9. Run Mock Tests (No Browser Required)
+```batch
+python test_pipeline_simple.py
+```
+
+### 10. Run Basic Tests
+```batch
+python test_basic.py
+```
+
+## Output Structure
+
+After running the pipeline, you'll find:
+- `output/` directory (or custom directory)
+  - `response_YYYYMMDD_HHMMSS.txt` - The prompt and response
+  - `response_YYYYMMDD_HHMMSS.json` - Metadata (timestamp, length, etc.)
+  - `error_screenshot.png` - Screenshot if an error occurs
+
+## Tips
+
+1. **First Run**: Use `--visible` mode the first time to see how the automation works
+2. **Long Responses**: Increase timeout with `--timeout 300` for complex questions
+3. **Multiple Runs**: Use different output filenames to avoid overwriting
+4. **Debugging**: Check error screenshots in the output directory if something fails
+5. **Batch Processing**: Use prompt files for processing multiple questions
+
+## Common Issues and Solutions
+
+### Issue: Browser doesn't start
+**Solution**: Ensure Playwright is installed:
+```batch
+python -m playwright install chromium
+```
+
+### Issue: Element not found
+**Solution**: Gemini may have updated its UI. The pipeline includes multiple selectors for robustness, but if it still fails, check the error screenshot.
+
+### Issue: Timeout errors
+**Solution**: Increase the timeout with `--timeout 300` for slower responses.
+
+### Issue: Permission errors
+**Solution**: Run as administrator or check file permissions.

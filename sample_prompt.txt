@@ -1,0 +1,1 @@
+Explain the concept of machine learning in simple terms. What are the main types of machine learning algorithms?
